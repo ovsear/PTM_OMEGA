@@ -1,0 +1,11 @@
+update ovito merge request
+update ovito documentation
+update LAMMPS
+update LAMMPS documentation
+make LAMMPS example
+
+add elemental numbers to ovito neighbourlist function
+update python interface for OVITO
+better testing framework
+
+clang format all code
