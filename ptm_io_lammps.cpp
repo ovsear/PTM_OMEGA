@@ -321,6 +321,11 @@ static void reset_system_box_and_atoms(SystemData& sys)
     sys.neigh_count.clear();
     sys.neigh_cache.clear();
 
+    sys.has_original_dump_columns = false;
+    sys.timestep = 0;
+    sys.original_atom_columns.clear();
+    sys.original_atom_tokens.clear();
+
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             sys.H[i][j] = 0.0;
@@ -459,7 +464,8 @@ static void frac_to_cart_lammps_box(
 bool read_lammps_dump_atomic(
     const char* filename,
     SystemData& sys,
-    int frame_index
+    int frame_index,
+    bool preserve_original_columns
 )
 {
     std::ifstream fin(filename);
@@ -520,6 +526,8 @@ bool read_lammps_dump_atomic(
         SystemData frame_sys;
         reset_system_box_and_atoms(frame_sys);
 
+        frame_sys.timestep = std::atoll(timestep_line.c_str());
+
         if (!parse_dump_box(fin, box_header, frame_sys)) {
             return false;
         }
@@ -542,6 +550,13 @@ bool read_lammps_dump_atomic(
         hs >> tmp; // ATOMS
         while (hs >> tmp) {
             cols.push_back(tmp);
+        }
+
+        if (preserve_original_columns) {
+            frame_sys.has_original_dump_columns = true;
+            frame_sys.original_atom_columns = cols;
+            frame_sys.original_atom_tokens.clear();
+            frame_sys.original_atom_tokens.reserve((size_t)natoms);
         }
 
         int col_id = find_column(cols, "id");
@@ -609,6 +624,10 @@ bool read_lammps_dump_atomic(
             if ((int)tok.size() < (int)cols.size()) {
                 std::fprintf(stderr, "ERROR: malformed atom line in %s\n", filename);
                 return false;
+            }
+
+            if (preserve_original_columns) {
+                frame_sys.original_atom_tokens.push_back(tok);
             }
 
             Atom a;
@@ -695,11 +714,17 @@ static bool file_looks_like_lammps_dump(const char* filename)
 bool read_lammps_atomic_auto(
     const char* filename,
     SystemData& sys,
-    int frame_index
+    int frame_index,
+    bool preserve_original_columns
 )
 {
     if (file_looks_like_lammps_dump(filename)) {
-        return read_lammps_dump_atomic(filename, sys, frame_index);
+        return read_lammps_dump_atomic(
+            filename,
+            sys,
+            frame_index,
+            preserve_original_columns
+        );
     }
 
     return read_lammps_data_atomic(filename, sys);
@@ -726,7 +751,7 @@ std::string make_output_dump_name(const std::string& input_name)
     return dir + base + "_ptm.dump";
 }
 
-void write_ptm_dump(
+void write_ptm_dump_basic(
     const std::string& outname,
     const SystemData& sys,
     const std::vector<PTMAtomResult>& results
@@ -800,4 +825,123 @@ void write_ptm_dump(
     fout.close();
 
     std::printf("wrote visual dump: %s\n", outname.c_str());
+}
+
+static void write_ptm_dump_preserve_original(
+    const std::string& outname,
+    const SystemData& sys,
+    const std::vector<PTMAtomResult>& results
+)
+{
+    std::ofstream fout(outname.c_str());
+
+    if (!fout) {
+        std::printf("ERROR: cannot write %s\n", outname.c_str());
+        return;
+    }
+
+    double xlo_bound = sys.xlo + std::min(std::min(0.0, sys.xy), std::min(sys.xz, sys.xy + sys.xz));
+    double xhi_bound = sys.xhi + std::max(std::max(0.0, sys.xy), std::max(sys.xz, sys.xy + sys.xz));
+
+    double ylo_bound = sys.ylo + std::min(0.0, sys.yz);
+    double yhi_bound = sys.yhi + std::max(0.0, sys.yz);
+
+    double zlo_bound = sys.zlo;
+    double zhi_bound = sys.zhi;
+
+    fout << "ITEM: TIMESTEP\n";
+    fout << sys.timestep << "\n";
+
+    fout << "ITEM: NUMBER OF ATOMS\n";
+    fout << sys.atoms.size() << "\n";
+
+    fout << "ITEM: BOX BOUNDS xy xz yz pp pp pp\n";
+    fout << xlo_bound << " " << xhi_bound << " " << sys.xy << "\n";
+    fout << ylo_bound << " " << yhi_bound << " " << sys.xz << "\n";
+    fout << zlo_bound << " " << zhi_bound << " " << sys.yz << "\n";
+
+    fout << "ITEM: ATOMS";
+
+    for (size_t c = 0; c < sys.original_atom_columns.size(); c++) {
+        fout << " " << sys.original_atom_columns[c];
+    }
+
+    fout
+        << " ptm_raw"
+        << " ptm_type"
+        << " ptm_vis_type"
+        << " omega_flag"
+        << " omega_site"
+        << " omega_confidence"
+        << " ptm_rmsd"
+        << " ptm_scale"
+        << " ptm_f_res"
+        << " ptm_f_res_x"
+        << " ptm_f_res_y"
+        << " ptm_f_res_z"
+        << " ptm_q0"
+        << " ptm_q1"
+        << " ptm_q2"
+        << " ptm_q3"
+        << " ptm_interatomic_distance"
+        << " ptm_lattice_constant"
+        << " bda_defect"
+        << " bda_coord"
+        << " bda_chunk_id"
+        << " bda_csp"
+        << " bda_local_a"
+        << " bda_local_cutoff"
+        << "\n";
+
+    for (size_t i = 0; i < sys.atoms.size(); i++) {
+        const std::vector<std::string>& tok = sys.original_atom_tokens[i];
+        const PTMAtomResult& r = results[i];
+
+        for (size_t c = 0; c < tok.size(); c++) {
+            if (c) fout << " ";
+            fout << tok[c];
+        }
+
+        fout
+            << " " << r.raw_ptm
+            << " " << r.ptm_type
+            << " " << r.vis_type
+            << " " << r.omega_flag
+            << " " << r.omega_site
+            << " " << r.omega_confidence
+            << " " << r.rmsd
+            << " " << r.scale
+            << " " << r.f_res_scalar
+            << " " << r.f_res[0]
+            << " " << r.f_res[1]
+            << " " << r.f_res[2]
+            << " " << r.q[0]
+            << " " << r.q[1]
+            << " " << r.q[2]
+            << " " << r.q[3]
+            << " " << r.interatomic_distance
+            << " " << r.lattice_constant
+            << " " << r.bda_defect
+            << " " << r.bda_coord
+            << " " << r.bda_chunk_id
+            << " " << r.bda_csp
+            << " " << r.bda_local_a
+            << " " << r.bda_local_cutoff
+            << "\n";
+    }
+}
+
+void write_ptm_dump(
+    const std::string& outname,
+    const SystemData& sys,
+    const std::vector<PTMAtomResult>& results
+)
+{
+    if (sys.has_original_dump_columns &&
+        sys.original_atom_tokens.size() == sys.atoms.size()) {
+        write_ptm_dump_preserve_original(outname, sys, results);
+        return;
+    }
+
+    write_ptm_dump_basic(outname, sys, results);
 }

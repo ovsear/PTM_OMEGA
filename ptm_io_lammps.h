@@ -15,13 +15,15 @@ bool read_lammps_data_atomic(
 bool read_lammps_dump_atomic(
     const char* filename,
     SystemData& sys,
-    int frame_index = -1
+    int frame_index = -1,
+    bool preserve_original_columns = false
 );
 
 bool read_lammps_atomic_auto(
     const char* filename,
     SystemData& sys,
-    int frame_index = -1
+    int frame_index = -1,
+    bool preserve_original_columns = false
 );
 
 void write_ptm_dump(

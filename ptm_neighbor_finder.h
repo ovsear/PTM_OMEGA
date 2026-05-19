@@ -2,6 +2,7 @@
 #define PTM_NEIGHBOR_FINDER_H
 
 #include <vector>
+#include <string>
 #include <cstddef>
 #include <cstdint>
 
@@ -33,6 +34,14 @@ struct SystemData {
     int neigh_stride;
     std::vector<int> neigh_count;
     std::vector<NeighborEntry> neigh_cache;
+
+    // Original dump metadata and per atom columns.
+    // Used only when reading LAMMPS dump files and preserving original properties.
+    bool has_original_dump_columns = false;
+    long long timestep = 0;
+
+    std::vector<std::string> original_atom_columns;
+    std::vector< std::vector<std::string> > original_atom_tokens;
 
     SystemData() :
         xlo(0.0), xhi(0.0),

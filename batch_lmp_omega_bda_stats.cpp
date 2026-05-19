@@ -415,7 +415,9 @@ static FrameSummary process_one_file(
     SystemData sys;
 
     auto t_read0 = std::chrono::high_resolution_clock::now();
-    if (!read_lammps_atomic_auto(file.c_str(), sys, -1)) {
+    bool preserve_original_columns = opt.write_visual;
+
+    if (!read_lammps_atomic_auto(file.c_str(), sys, -1, preserve_original_columns)) {
         s.status = 1;
         auto t_end = std::chrono::high_resolution_clock::now();
         s.total_time = elapsed_sec(t0, t_end);
