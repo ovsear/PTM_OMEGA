@@ -1,0 +1,7 @@
+class,count,fraction_all_atoms
+omega_only,57564,0.13325
+twin_only,42048,0.09733333333333333
+omega_before_twin,47691,0.11039583333333333
+twin_before_omega,27216,0.063
+simultaneous,97937,0.22670601851851852
+none,159544,0.3693148148148148
