@@ -1,0 +1,13 @@
+source_state,target_state,count,source_stage,target_stage,source_node,target_node,source_fraction
+BCC,FCC,322835,0,1,stage_0_BCC,stage_1_FCC,0.9966134867811763
+BCC,OMEGA,1097,0,1,stage_0_BCC,stage_1_OMEGA,0.003386513218823704
+OMEGA,BCC,225,0,1,stage_0_OMEGA,stage_1_BCC,1.0
+BCC,FCC,224,1,2,stage_1_BCC,stage_2_FCC,1.0
+FCC,BCC,290639,1,2,stage_1_FCC,stage_2_BCC,0.9912146377231724
+FCC,OMEGA,2576,1,2,stage_1_FCC,stage_2_OMEGA,0.008785362276827583
+OMEGA,BCC,249,1,2,stage_1_OMEGA,stage_2_BCC,1.0
+BCC,FCC,41623,2,3,stage_2_BCC,stage_3_FCC,0.9659101457347071
+BCC,OMEGA,1469,2,3,stage_2_BCC,stage_3_OMEGA,0.03408985426529286
+FCC,BCC,155,2,3,stage_2_FCC,stage_3_BCC,1.0
+OMEGA,BCC,456,2,3,stage_2_OMEGA,stage_3_BCC,0.95
+OMEGA,FCC,24,2,3,stage_2_OMEGA,stage_3_FCC,0.05

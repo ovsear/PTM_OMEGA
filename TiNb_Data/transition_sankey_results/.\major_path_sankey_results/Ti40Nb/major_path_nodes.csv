@@ -1,0 +1,10 @@
+stage_index,stage_name,state,node_id,count
+0,Stage 0,BCC,stage_0_BCC,432000
+1,Stage 1,FCC,stage_1_FCC,125237
+1,Stage 1,OMEGA,stage_1_OMEGA,2586
+2,Stage 2,BCC,stage_2_BCC,121702
+2,Stage 2,OMEGA,stage_2_OMEGA,287
+2,Stage 2,FCC,stage_2_FCC,9
+3,Stage 3,FCC,stage_3_FCC,7792
+3,Stage 3,OMEGA,stage_3_OMEGA,793
+3,Stage 3,BCC,stage_3_BCC,162
